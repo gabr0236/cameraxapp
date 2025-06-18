@@ -17,9 +17,6 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
-import androidx.camera.video.VideoCapture
 import androidx.core.content.ContextCompat
 import com.example.cameraxapp.databinding.ActivityMainBinding
 import java.nio.ByteBuffer
