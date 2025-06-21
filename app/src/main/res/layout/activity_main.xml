@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -12,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- ℹ️  Info button (top-right) -->
+    <!-- ℹ️ info button (top-right) -->
     <ImageButton
         android:id="@+id/info_button"
         android:layout_width="48dp"
@@ -25,7 +26,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Shutter button (bottom-center) -->
+    <!-- Shutter button (bottom-centre) -->
     <Button
         android:id="@+id/image_capture_button"
         android:layout_width="110dp"
@@ -34,21 +35,22 @@
         android:elevation="2dp"
         android:text="@string/take_photo"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Info “bubble”, hidden until needed -->
+    <!-- Info bubble pinned to top -->
     <androidx.cardview.widget.CardView
         android:id="@+id/info_bubble"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_margin="16dp"
         android:visibility="gone"
-        android:layout_margin="32dp"
         app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
         app:cardBackgroundColor="@android:color/white"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -56,25 +58,28 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- ⓧ close button -->
-            <ImageButton
-                android:id="@+id/info_close_button"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="end"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/close_button_desc"
-                android:src="@android:drawable/ic_menu_close_clear_cancel" />
-
-            <!-- Text inside bubble -->
             <TextView
                 android:id="@+id/info_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingTop="8dp"
                 android:text="@string/info_text"
                 android:textAppearance="?android:attr/textAppearanceMedium" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
+
+    <!-- ⓧ close button (drawn after bubble, sits above it) -->
+    <ImageButton
+        android:id="@+id/info_close_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:visibility="gone"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/close_button_desc"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        app:tint="@android:color/black"
+        android:elevation="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
