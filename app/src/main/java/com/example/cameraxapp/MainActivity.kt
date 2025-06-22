@@ -14,7 +14,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.cameraxapp.databinding.ActivityMainBinding
+import com.example.cameraxapp.network.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -29,40 +37,39 @@ class MainActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
 
+    /* ---------------- life-cycle ---------------- */
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Request camera permissions
         if (allPermissionsGranted()) startCamera() else requestPermissions()
 
-        /* ── UI listeners ───────────────────────────────────────────── */
+        /* ── UI listeners ────────────────────────── */
 
-        // Shutter
-        binding.imageCaptureButton?.setOnClickListener { takePhoto() }
+        binding.imageCaptureButton?.setOnClickListener {
+        //    takePhoto()
+              uploadFromAssets()          // send the bundled JPEG instead
+        }
 
-        // ℹ️ → open bubble
+        // ℹ️ open bubble
         binding.infoButton?.setOnClickListener {
-            View.GONE.also { binding.infoButton?.visibility = it }          // hide ℹ️
-            binding.infoCloseButton?.visibility = View.VISIBLE  // show ⓧ
+            binding.infoButton?.visibility = View.GONE
+            binding.infoCloseButton?.visibility = View.VISIBLE
 
             binding.infoBubble?.apply {
                 alpha = 0f
-                translationY = -32f            // subtle emerge-from-button
+                translationY = -32f
                 visibility = View.VISIBLE
-                animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .setDuration(250L)
-                    .start()
+                animate().alpha(1f).translationY(0f).setDuration(250L).start()
             }
         }
 
-        // ⓧ → close bubble
+        // ⓧ close bubble
         binding.infoCloseButton?.setOnClickListener {
-            binding.infoCloseButton?.visibility = View.GONE     // hide ⓧ
-            binding.infoButton?.visibility  = View.VISIBLE      // show ℹ️
+            binding.infoCloseButton?.visibility = View.GONE
+            binding.infoButton?.visibility = View.VISIBLE
 
             binding.infoBubble?.animate()
                 ?.alpha(0f)
@@ -71,8 +78,6 @@ class MainActivity : AppCompatActivity() {
                 ?.withEndAction { binding.infoBubble?.visibility = View.GONE }
                 ?.start()
         }
-
-        /* ───────────────────────────────────────────────────────────── */
 
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
@@ -107,9 +112,28 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onImageSaved(result: ImageCapture.OutputFileResults) {
-                    val msg = "Photo saved: ${result.savedUri}"
-                    Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
+                    val uri = result.savedUri ?: return
+                    Log.d(TAG, "Photo saved → $uri")
+
+                    /* -------- upload to FastAPI in a coroutine -------- */
+                    lifecycleScope.launch {
+                        try {
+                            val part: MultipartBody.Part =
+                                uri.asMultipart(contentResolver)     // helper in UriExt.kt
+                            val preds = ApiClient.service.predict(part)
+
+                            withContext(Dispatchers.Main) { showPredictions(preds) }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Upload failed: ${e.localizedMessage}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
                 }
             }
         )
@@ -148,8 +172,7 @@ class MainActivity : AppCompatActivity() {
 
     /* ---------------- permission helpers ---------------- */
 
-    private fun requestPermissions() =
-        activityResultLauncher.launch(REQUIRED_PERMISSIONS)
+    private fun requestPermissions() = activityResultLauncher.launch(REQUIRED_PERMISSIONS)
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
@@ -169,7 +192,15 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
-    /* ---------------- static / helper ---------------- */
+    /* ---------------- utility / helper ---------------- */
+
+    private fun showPredictions(preds: List<Prediction>) {
+        val text = preds.joinToString("\n") {
+            "%s : %.2f%%".format(it.clazz, it.prob)
+        }
+        binding.predictionText?.text = text
+        binding.predictionCard?.visibility = View.VISIBLE
+    }
 
     private class LuminosityAnalyzer(private val listener: LumaListener) :
         ImageAnalysis.Analyzer {
@@ -194,5 +225,33 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P)
                 add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }.toTypedArray()
+    }
+
+    /* ---------- test-upload helper (assets) ---------- */
+    private fun uploadFromAssets(fileName: String = "IBT_23255.jpeg") {
+        lifecycleScope.launch {
+            try {
+                val bytes = assets.open(fileName).use { it.readBytes() }
+
+                val part = MultipartBody.Part.createFormData(
+                    /* name  = */ "file",
+                    /* filename on server = */ fileName,
+                    /* body = */ bytes.toRequestBody("image/jpeg".toMediaType())
+                )
+
+                val preds = ApiClient.service.predict(part)
+
+                withContext(Dispatchers.Main) { showPredictions(preds) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Test upload failed: ${e.localizedMessage}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
     }
 }
