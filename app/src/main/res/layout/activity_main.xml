@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Info (top right) -->
+    <!-- Info button (black) -->
     <ImageButton
         android:id="@+id/info_button"
         android:layout_width="48dp"
@@ -26,7 +26,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Close-info -->
+    <!-- Info close button (black) -->
     <ImageButton
         android:id="@+id/info_close_button"
         android:layout_width="48dp"
@@ -41,7 +41,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Info bubble -->
+    <!-- Info bubble card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/info_bubble"
         android:layout_width="0dp"
@@ -55,19 +55,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/info_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:id="@+id/info_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/info_text"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
-        </LinearLayout>
+            android:padding="16dp"
+            android:text="@string/info_text"
+            android:textColor="@android:color/black"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
     </androidx.cardview.widget.CardView>
 
     <!-- Shutter button -->
@@ -83,7 +78,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Prediction overlay -->
+    <!-- Prediction card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/prediction_card"
         android:layout_width="0dp"
@@ -98,11 +93,14 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- Inner layout with side padding -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
 
-            <!-- Close prediction -->
+            <!-- Prediction close button (black) -->
             <ImageButton
                 android:id="@+id/prediction_close"
                 android:layout_width="24dp"
@@ -115,7 +113,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <!-- Analysed image (entire photo visible) -->
+            <!-- Analysed image -->
             <ImageView
                 android:id="@+id/prediction_image"
                 android:layout_width="0dp"
@@ -127,23 +125,24 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/prediction_close" />
 
-            <!-- Prediction table -->
+            <!-- Result table -->
             <TableLayout
                 android:id="@+id/prediction_table"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:stretchColumns="0,1"
-                android:padding="16dp"
+                android:paddingTop="16dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/prediction_image">
 
-                <TableRow android:background="#F4F5F6">
+                <TableRow>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Genus"
                         android:textStyle="bold"
+                        android:textColor="@android:color/black"
                         android:paddingEnd="24dp" />
 
                     <TextView
@@ -151,15 +150,17 @@
                         android:layout_height="wrap_content"
                         android:text="Species"
                         android:textStyle="bold"
+                        android:textColor="@android:color/black"
                         android:paddingEnd="24dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Probability"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black" />
                 </TableRow>
-                <!-- rows added programmatically -->
+                <!-- Data rows inserted at runtime -->
             </TableLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
