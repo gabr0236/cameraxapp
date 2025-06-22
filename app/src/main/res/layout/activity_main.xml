@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Info button (top right) -->
+    <!-- Info (top right) -->
     <ImageButton
         android:id="@+id/info_button"
         android:layout_width="48dp"
@@ -26,7 +26,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Close info button -->
+    <!-- Close-info -->
     <ImageButton
         android:id="@+id/info_close_button"
         android:layout_width="48dp"
@@ -41,7 +41,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Info bubble card -->
+    <!-- Info bubble -->
     <androidx.cardview.widget.CardView
         android:id="@+id/info_bubble"
         android:layout_width="0dp"
@@ -70,7 +70,7 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- Shutter button (bottom centre) -->
+    <!-- Shutter button -->
     <ImageButton
         android:id="@+id/image_capture_button"
         android:layout_width="96dp"
@@ -102,7 +102,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- Close prediction button -->
+            <!-- Close prediction -->
             <ImageButton
                 android:id="@+id/prediction_close"
                 android:layout_width="24dp"
@@ -115,6 +115,18 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
+            <!-- Analysed image (entire photo visible) -->
+            <ImageView
+                android:id="@+id/prediction_image"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:adjustViewBounds="true"
+                android:scaleType="centerInside"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/prediction_close" />
+
             <!-- Prediction table -->
             <TableLayout
                 android:id="@+id/prediction_table"
@@ -124,9 +136,8 @@
                 android:padding="16dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/prediction_close">
+                app:layout_constraintTop_toBottomOf="@id/prediction_image">
 
-                <!-- Header row -->
                 <TableRow android:background="#F4F5F6">
                     <TextView
                         android:layout_width="wrap_content"
@@ -148,7 +159,7 @@
                         android:text="Probability"
                         android:textStyle="bold" />
                 </TableRow>
-                <!-- Data rows will be added programmatically -->
+                <!-- rows added programmatically -->
             </TableLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>

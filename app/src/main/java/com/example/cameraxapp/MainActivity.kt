@@ -3,6 +3,8 @@ package com.example.cameraxapp
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -41,9 +43,13 @@ class MainActivity : AppCompatActivity() {
     private var imageCapture: ImageCapture? = null
     private lateinit var cameraExecutor: ExecutorService
 
-    // -------------------------------------------------------------------- //
-    // life-cycle
-    // -------------------------------------------------------------------- //
+    // store last image for preview
+    private var lastPhotoUri: Uri? = null
+    private var lastAssetBitmap: Bitmap? = null
+
+    // --------------------------------------------------------------------
+    // lifecycle
+    // --------------------------------------------------------------------
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -51,18 +57,16 @@ class MainActivity : AppCompatActivity() {
 
         if (allPermissionsGranted()) startCamera() else requestPermissions()
 
-        /* shutter – choose ONE */
         binding.imageCaptureButton?.setOnClickListener {
-            // takePhoto()           // <-- enable for real capture
-            uploadFromAssets()       // <-- bundled-image test
+            // takePhoto()            // for real capture
+            uploadFromAssets()        // test path
         }
 
-        /* close × inside prediction card */
         binding.predictionClose?.setOnClickListener {
             binding.predictionCard?.visibility = View.GONE
         }
 
-        /* info bubble toggle */
+        // info bubble toggle
         binding.infoButton?.setOnClickListener {
             binding.infoButton?.visibility = View.GONE
             binding.infoCloseButton?.visibility = View.VISIBLE
@@ -87,13 +91,13 @@ class MainActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
-    // -------------------------------------------------------------------- //
+    // --------------------------------------------------------------------
     // Camera-X helpers
-    // -------------------------------------------------------------------- //
+    // --------------------------------------------------------------------
     private fun startCamera() {
-        val future = ProcessCameraProvider.getInstance(this)
-        future.addListener({
-            val provider = future.get()
+        val providerFuture = ProcessCameraProvider.getInstance(this)
+        providerFuture.addListener({
+            val provider = providerFuture.get()
 
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(binding.viewFinder?.surfaceProvider)
@@ -136,11 +140,9 @@ class MainActivity : AppCompatActivity() {
             opts,
             ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
-
                 override fun onError(exc: ImageCaptureException) {
                     Log.e(TAG, "Photo capture failed: ${exc.message}", exc)
                 }
-
                 override fun onImageSaved(res: ImageCapture.OutputFileResults) {
                     res.savedUri?.let { lifecycleScope.launch { uploadUri(it) } }
                 }
@@ -150,6 +152,8 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun uploadUri(uri: Uri) {
         try {
+            lastPhotoUri = uri       // save for preview
+            lastAssetBitmap = null
             val part = uri.asMultipart(contentResolver)
             val preds = ApiClient.service.predict(part)
             withContext(Dispatchers.Main) { showPredictions(preds) }
@@ -157,7 +161,7 @@ class MainActivity : AppCompatActivity() {
             Log.e(TAG, "Upload failed", e)
             withContext(Dispatchers.Main) {
                 Toast.makeText(
-                    /* context */ this@MainActivity,
+                    this@MainActivity,
                     "Upload failed: ${e.localizedMessage}",
                     Toast.LENGTH_SHORT
                 ).show()
@@ -165,28 +169,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // -------------------------------------------------------------------- //
-    // Prediction overlay
-    // -------------------------------------------------------------------- //
+    // --------------------------------------------------------------------
+    // Prediction UI
+    // --------------------------------------------------------------------
     private fun showPredictions(preds: List<Prediction>) {
         binding.predictionCard?.visibility = View.VISIBLE
-        val table: TableLayout = binding.predictionTable ?: return
 
-        // clear previous rows except header
+        // load preview image first
+        binding.predictionImage?.let { img ->
+            when {
+                lastPhotoUri != null     -> img.setImageURI(lastPhotoUri)
+                lastAssetBitmap != null  -> img.setImageBitmap(lastAssetBitmap)
+                else                     -> img.setImageDrawable(null)
+            }
+        }
+
+        // build table
+        val table: TableLayout = binding.predictionTable ?: return
         while (table.childCount > 1) table.removeViewAt(1)
 
         preds.forEach { p ->
             val row = TableRow(this).apply { setPadding(0, 8, 0, 8) }
-
-            fun cell(text: String) = TextView(this).apply {
-                this.text = text
-                setPadding(0, 0, 24, 0)
+            fun cell(t: String) = TextView(this).apply {
+                text = t; setPadding(0, 0, 24, 0)
             }
-
             val parts = p.clazz.split("-", limit = 2)
             val genus   = parts.getOrNull(0)?.replaceFirstChar { it.uppercase() } ?: p.clazz
             val species = parts.getOrNull(1) ?: ""
-
             row.addView(cell(genus))
             row.addView(cell(species))
             row.addView(cell("%.2f%%".format(p.prob)))
@@ -194,16 +203,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // -------------------------------------------------------------------- //
-    // Test helper – bundled JPEG
-    // -------------------------------------------------------------------- //
+    // --------------------------------------------------------------------
+    // Bundled-JPEG test helper
+    // --------------------------------------------------------------------
     private fun uploadFromAssets(fileName: String = "IBT_23255.jpeg") {
         lifecycleScope.launch {
             try {
                 val bytes = assets.open(fileName).use { it.readBytes() }
+                lastAssetBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                lastPhotoUri = null
                 val part = MultipartBody.Part.createFormData(
-                    "file", fileName,
-                    bytes.toRequestBody("image/jpeg".toMediaType())
+                    "file", fileName, bytes.toRequestBody("image/jpeg".toMediaType())
                 )
                 val preds = ApiClient.service.predict(part)
                 withContext(Dispatchers.Main) { showPredictions(preds) }
@@ -220,24 +230,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // -------------------------------------------------------------------- //
+    // --------------------------------------------------------------------
     // Permission helpers
-    // -------------------------------------------------------------------- //
+    // --------------------------------------------------------------------
     private fun requestPermissions() = permLauncher.launch(REQUIRED_PERMISSIONS)
-
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
     }
-
     private val permLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-            if (result.values.all { it }) startCamera()
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
+            if (res.values.all { it }) startCamera()
             else Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
         }
 
-    // -------------------------------------------------------------------- //
-    // Analyzer + constants
-    // -------------------------------------------------------------------- //
+    // --------------------------------------------------------------------
+    // Analyzer & constants
+    // --------------------------------------------------------------------
     private class LuminosityAnalyzer(private val listener: LumaListener) : ImageAnalysis.Analyzer {
         private fun ByteBuffer.toByteArray() = ByteArray(remaining()).also { get(it) }
         override fun analyze(image: ImageProxy) {
