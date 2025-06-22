@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+
+    <!-- white ring -->
+    <stroke
+        android:width="6dp"
+        android:color="@android:color/white"/>
+
+    <!-- empty centre -->
+    <solid android:color="@android:color/transparent"/>
+
+    <!-- ensure the vector is always square -->
+    <size android:width="96dp" android:height="96dp"/>
+</shape>

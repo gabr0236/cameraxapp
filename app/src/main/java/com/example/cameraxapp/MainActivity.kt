@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
 
         // ℹ️ → open bubble
         binding.infoButton?.setOnClickListener {
-            binding.infoButton?.visibility = View.GONE          // hide ℹ️
+            View.GONE.also { binding.infoButton?.visibility = it }          // hide ℹ️
             binding.infoCloseButton?.visibility = View.VISIBLE  // show ⓧ
 
             binding.infoBubble?.apply {
